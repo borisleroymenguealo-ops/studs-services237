@@ -282,6 +282,16 @@ function bootstrapAdmin() {
     admin = { ...INITIAL_USERS[0], email: MASTER_EMAIL };
     db.users.unshift(admin);
   }
+  // Réinitialisation exceptionnelle du mot de passe administrateur
+  if (
+    process.env.RESET_ADMIN_PASSWORD === 'true' &&
+    process.env.ADMIN_PASSWORD
+  ) {
+    admin.passwordHash = hashPassword(process.env.ADMIN_PASSWORD);
+    saveDb(db);
+    console.log("[STUD'S] Mot de passe administrateur réinitialisé.");
+                    }
+    
   if (!admin.passwordHash) {
     const pwd = process.env.ADMIN_PASSWORD || crypto.randomBytes(9).toString('base64url');
     admin.passwordHash = hashPassword(pwd);

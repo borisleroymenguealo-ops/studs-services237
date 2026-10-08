@@ -1,0 +1,6 @@
+{
+  "name": "STUD'S App",
+  "description": "Application mobile officielle de Stud's Services à Ebolowa - Réseau d'entraide étudiante sécurisé par carte NFC.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -436,7 +436,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { success: false, message: data.message || 'Une erreur est survenue lors de l\'inscription.' };
       }
     } catch (e) {
-      return { success: false, message: 'Impossible de joindre le serveur STUD'S. Vérifiez votre connexion Internet.' };
+      return { success: false, message: "Impossible de joindre le serveur STUD'S. Vérifiez votre connexion Internet." };
     }
   };
 
@@ -474,7 +474,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { success: false, message: data.message || 'Identifiants incorrects.' };
       }
     } catch (e) {
-      return { success: false, message: 'Impossible de joindre le serveur STUD'S. Vérifiez votre connexion Internet.' };
+      return { success: false, message: "Impossible de joindre le serveur STUD'S. Vérifiez votre connexion Internet." };
     }
   };
 

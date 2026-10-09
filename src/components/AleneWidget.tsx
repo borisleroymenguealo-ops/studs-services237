@@ -162,7 +162,7 @@ export function AleneWidget() {
               </div>
               <div className="text-left">
                 <p className="text-[9px] font-black text-slate-800">Lessive & Repassage</p>
-                <p className="text-[8px] font-bold text-slate-500">1500 FCFA / h</p>
+                <p className="text-[8px] font-bold text-slate-500">5 000 FCFA</p>
               </div>
             </div>
             <motion.button 

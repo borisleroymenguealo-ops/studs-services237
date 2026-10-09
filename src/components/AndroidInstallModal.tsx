@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Smartphone, QrCode, Copy, Check, Download, Chrome, Plus, Home, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../AppContext';
+import { PwaDiagnostic } from './PwaDiagnostic';
 
 interface AndroidInstallModalProps {
   isOpen: boolean;
@@ -345,6 +346,8 @@ export const AndroidInstallModal: React.FC<AndroidInstallModalProps> = ({ isOpen
               </>
             )}
           </div>
+
+          <PwaDiagnostic />
 
           {/* Quick Active Trigger Action */}
           <div className="pt-2 border-t-2 border-dashed border-slate-200 flex flex-col sm:flex-row gap-3">

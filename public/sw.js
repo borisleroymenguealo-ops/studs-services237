@@ -1,4 +1,4 @@
-const CACHE_NAME = 'studs-app-v2.1';
+const CACHE_NAME = 'studs-app-__BUILD_ID__';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -64,37 +64,39 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // If offline, serve the cached index.html immediately
-          return caches.match(event.request) || caches.match('/index.html');
+          return caches.match(event.request).then((r) => r || caches.match('/index.html'));
         })
     );
     return;
   }
 
-  // Stale-While-Revalidate for other static assets (JS, CSS, images, JSON, etc.)
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch new version in background to update cache for future sessions
-        fetch(event.request).then((networkResponse) => {
+  // Fichiers hachés de Vite (/assets/…) : leur nom change à chaque build → cache d'abord (rapide, jamais périmé)
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((networkResponse) => {
           if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse);
-            });
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           }
-        }).catch(() => { /* Ignore offline fetch failures */ });
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
 
-        return cachedResponse;
-      }
-
-      return fetch(event.request).then((networkResponse) => {
+  // Autres fichiers (icônes, manifeste…) : réseau d'abord, cache si hors-ligne → jamais d'ancienne version tant qu'on est connecté
+  event.respondWith(
+    fetch(event.request)
+      .then((networkResponse) => {
         if (networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          const copy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         }
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });

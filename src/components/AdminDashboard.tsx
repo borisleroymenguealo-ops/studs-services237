@@ -101,7 +101,7 @@ export const AdminDashboard: React.FC = () => {
     fetchAssistantLogs
   } = useApp();
 
-  const isMasterAdmin = currentUser?.email?.toLowerCase() === 'borisleroymenguealo@gmail.com';
+  const isMasterAdmin = currentUser?.isMaster === true; // décidé par le serveur
 
   const [activeTab, setActiveTab] = useState<'kpis' | 'orders' | 'members' | 'directors' | 'ratings' | 'financials' | 'apis' | 'chat'>('kpis');
 

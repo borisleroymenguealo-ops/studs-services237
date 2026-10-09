@@ -48,6 +48,7 @@ interface AppContextType {
   loyaltyPointsRate: number;
   setLoyaltyPointsRate: (rate: number) => void;
   loyaltyPointValue: number;
+  nfcPointsMultiplier: number;
   setLoyaltyPointValue: (value: number) => void;
   activeApp: 'client' | 'provider' | 'admin';
   setActiveApp: (app: 'client' | 'provider' | 'admin') => void;
@@ -175,6 +176,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [loyaltyPointsRate, setLoyaltyPointsRateState] = useState<number>(10);
   const [loyaltyPointValue, setLoyaltyPointValueState] = useState<number>(5);
+  const [nfcPointsMultiplier, setNfcPointsMultiplier] = useState<number>(1.5);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Local Offline Queue (to persist offline orders while backend is unreachable)
@@ -217,8 +219,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadMomoConfigs = async () => {
     if (connectivityMode === 'offline') return;
     // Safety check: Only query the private configs if logged in as the master admin (DG Boris MENGUE)
-    const email = localStorage.getItem('studs_current_user_email') || '';
-    if (email.toLowerCase() !== 'borisleroymenguealo@gmail.com') return;
+    if (!currentUser?.isMaster) return;
 
     try {
       const res = await fetch('/api/momo-api/config');
@@ -234,8 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadMomoLogs = async () => {
     if (connectivityMode === 'offline') return;
     // Safety check: Only query the private logs if logged in as the master admin (DG Boris MENGUE)
-    const email = localStorage.getItem('studs_current_user_email') || '';
-    if (email.toLowerCase() !== 'borisleroymenguealo@gmail.com') return;
+    if (!currentUser?.isMaster) return;
 
     try {
       const res = await fetch('/api/momo-api/logs');
@@ -264,6 +264,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications(data.notifications);
         setLoyaltyPointsRateState(data.loyaltyPointsRate);
         setLoyaltyPointValueState(data.loyaltyPointValue);
+        if (data.nfcPointsMultiplier !== undefined) setNfcPointsMultiplier(data.nfcPointsMultiplier);
         setDistributionModeState(data.distributionMode);
         if (data.chatMessages) {
           setChatMessages(data.chatMessages);
@@ -1098,6 +1099,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loyaltyPointsRate,
         setLoyaltyPointsRate,
         loyaltyPointValue,
+        nfcPointsMultiplier,
         setLoyaltyPointValue,
         activeApp,
         setActiveApp,

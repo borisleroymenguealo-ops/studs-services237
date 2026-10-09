@@ -18,7 +18,7 @@ export const WelcomeScreen: React.FC = () => {
   const [loginInput, setLoginInput] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [password, setPassword] = useState('');
-  const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+  const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' && !!import.meta.env.VITE_DEMO_PASSWORD;
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   // Registration State
@@ -103,7 +103,7 @@ export const WelcomeScreen: React.FC = () => {
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      const res = await loginUser(emailToLogin, import.meta.env.VITE_DEMO_PASSWORD || 'Demo@2026');
+      const res = await loginUser(emailToLogin, import.meta.env.VITE_DEMO_PASSWORD);
       if (!res.success) {
         setErrorMsg(res.message);
       }

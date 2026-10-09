@@ -28,6 +28,7 @@ export interface User {
   createdAt: string;
   birthDate?: string;
   availabilities?: ProviderAvailability[];
+  isMaster?: boolean; // Directeur Général (déterminé par le serveur)
   commissionOwed?: number; // FCFA dus à STUD'S (paiements en espèces)
 }
 
@@ -44,6 +45,7 @@ export interface Service {
   reviewsCount: number;
   imageUrl?: string;
   iconName: string; // Lucide icon identifier
+  active?: boolean; // false = masqué du catalogue
 }
 
 export type OrderStatus = 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';

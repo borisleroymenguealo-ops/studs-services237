@@ -94,6 +94,32 @@
 
 **Lockfile** : sans lui, Railway installe les dernières versions compatibles à chaque déploiement ; un jour une mise à jour peut casser le build. Risque faible aujourd'hui, à traiter avant le lancement public : depuis un ordinateur (ou Termux), `npm install` puis envoyer le fichier `package-lock.json` créé dans GitHub.
 
+## 🆕 Version 1.6 — mot de passe admin, tarifs/points modifiables, Alene, PWA
+
+| Sujet | Constat | Correction |
+|---|---|---|
+| **Build v1.5 cassé** | Mon remplacement des textes « Cloud Run » avait mis une apostrophe dans une chaîne entre guillemets simples (`'…STUD'S…'`) : erreur de syntaxe dans `AppContext.tsx`, qui aurait fait échouer `npm run build`. | Corrigé. Toute la syntaxe du projet est revérifiée. |
+| **Mot de passe admin** | Changer `ADMIN_PASSWORD` dans Railway n'avait aucun effet une fois le compte créé (le hash restait en base). | `ADMIN_PASSWORD` **fait autorité** : s'il change, le mot de passe du DG est remplacé au redémarrage. Pour garder un mot de passe changé depuis l'app, supprimez la variable. |
+| **Tarifs** | Prix fixes (aucune interface). | Nouvel onglet **Tarifs & points** (bouton « 💳 Paiements & NFC » côté admin) : modifier le prix de chaque service, le masquer/réactiver, en ajouter un. Les commandes déjà passées gardent leur prix. Accès : DG, ou assistant ayant le module Finances. |
+| **Points** | Bug de calcul : une prestation de 5 000 FCFA rapportait 500 points (= 2 500 FCFA, soit **50 %** de remise gratuite) au lieu de 10 %. | Formule corrigée : *récompense = taux % du prix, converti en points (1 point = X FCFA)* → 100 points (= 500 FCFA = 10 %). Taux, valeur du point et **multiplicateur NFC** (1,5 par défaut) réglables, avec exemple chiffré et alerte si la marge de STUD'S est menacée. |
+| **Alene** | Plusieurs défauts : (1) l'historique commençait par un message « model » (le mot d'accueil), ce que l'API Gemini refuse → erreur systématique ; (2) tarifs, taux de points et numéros écrits en dur (donc faux dès qu'on les modifie) ; (3) section « recharge MoMo » obsolète ; (4) une seule tentative de modèle, erreurs brutes ; (5) aucun secours si la clé IA manque. | Historique nettoyé ; connaissances **construites en direct** depuis la base (services, prix, taux, numéros de paiement) ; modèles de repli (`GEMINI_MODEL`, `gemini-flash-latest`…) ; **réponses de secours sans IA** (prix, paiement, NFC, points, annulation, mot de passe) si la clé est absente ou le quota atteint ; limite de 20 messages / 10 min ; consignes anti-détournement. |
+| **PWA (Railway)** | Plusieurs causes possibles, dont une icône mal formée dans les anciennes versions. | Icônes/manifeste corrigés (v1.5) ; icônes et manifeste n'ont plus un cache d'un an ; correction du service worker (clone de réponse) ; erreurs `/api` en JSON ; et un **diagnostic intégré** : menu ⋮ → Installer → « 🔎 Pourquoi je ne peux pas installer l'app ? » liste chaque contrôle (HTTPS, manifeste, icônes PNG, service worker). |
+
+## 🆕 Version 1.7 — suites d'une revue externe (corrigé ET testé quand c'était possible)
+
+| Point de la revue | Vérifié dans le code ? | Correction |
+|---|---|---|
+| Reconnaissance du super-admin différente côté interface et côté serveur | **Oui** : l'adresse du DG était écrite en dur à 3 endroits du client, alors que le serveur lit `MASTER_ADMIN_EMAIL` | Le serveur envoie `isMaster` ; le client n'utilise plus aucune adresse e-mail. Journaux du serveur : adresse issue de la configuration. |
+| Erreurs de sauvegarde ignorées (A3) | **Oui** : `saveDb()` journalisait l'échec puis la route répondait « succès » | Un échec d'écriture interrompt la requête et renvoie une erreur claire (« votre action n'a PAS été prise en compte »). Un gestionnaire d'erreurs final évite toute fausse réussite. |
+| Service worker : ancienne version affichée après mise à jour (A4) | **Oui** (risque réel pour les fichiers non hachés) | Identifiant de build injecté à chaque déploiement (ancien cache supprimé) ; fichiers `/assets/` en cache d'abord (noms hachés) ; icônes, manifeste et autres en réseau d'abord. |
+| `ADMIN_PASSWORD` à clarifier | Comportement déjà corrigé en v1.6 | Documenté dans `.env.example` et `DEPLOIEMENT.md` (tableau des variables obligatoires/facultatives, `MASTER_ADMIN_EMAIL`, `DATA_DIR`). Avertissements au démarrage si `SESSION_SECRET`, `DATA_DIR` ou `ADMIN_PASSWORD` manquent en production. |
+| Mot de passe de démonstration prérempli | **Oui** (`Demo@2026` en valeur par défaut, côté serveur et côté interface) | Plus aucune valeur par défaut : la démo exige `DEMO_PASSWORD` / `VITE_DEMO_PASSWORD` explicites ; jamais active en production par défaut. |
+| Opérations financières comptabilisées deux fois | Logique déjà protégée (drapeau `settled`) | **Prouvé par des tests automatiques exécutés** (`npm test`, 11 tests verts) : règlement unique, commission espèces, attente de paiement Mobile Money, points et multiplicateur NFC, remises, jetons falsifiés, cartes NFC contrefaites. La logique financière est extraite dans `serverLogic.ts` pour être testable. |
+| Liste de contrôle de validation (11 points) | — | `CHECKLIST_VALIDATION.md` à cocher sur le site en ligne. |
+| `package-lock.json` | Oui, absent | **Toujours non corrigé** : impossible sans accès Internet (voir plus haut). |
+
+**Ce qui a été exécuté ici** : `npm test` (11/11) et les vérifications de syntaxe TypeScript du serveur et de l'interface. **Non exécuté** (pas d'Internet) : `npm install`, `npm run build`, `npm run lint` complet, et tout essai dans un navigateur.
+
 ## 🚧 Reste à faire
 
 - **Vérification SMS** à l'inscription et envoi automatique du code de réinitialisation : nécessite un fournisseur SMS payant (ex. Africa's Talking, Orange SMS API). Le code est prêt à l'accueillir ; en attendant, l'admin remet le code.

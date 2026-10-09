@@ -22,6 +22,21 @@ Pourquoi : il héberge une application Node + un **disque persistant** (indispen
 7. Connexion : `borisleroymenguealo@gmail.com` + votre `ADMIN_PASSWORD`.
 8. Sur Android : ouvrez l'adresse dans Chrome > menu ⋮ > **Installer l'application** (l'app se comporte alors comme une vraie app).
 
+## Variables : obligatoires / facultatives
+| Variable | Rôle |
+|---|---|
+| `NODE_ENV=production` | **obligatoire** |
+| `DATA_DIR=/data` | **obligatoire** (volume monté sur `/data`) — sans cela les données sont perdues à chaque déploiement |
+| `SESSION_SECRET` | **obligatoire** (48 caractères au hasard) |
+| `ADMIN_PASSWORD` | **obligatoire** au premier lancement. Il fait autorité : le modifier remplace le mot de passe du DG au redémarrage ; le supprimer conserve le mot de passe actuel |
+| `MASTER_ADMIN_EMAIL` | facultatif (défaut : borisleroymenguealo@gmail.com) — le serveur décide qui est le DG |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | facultatifs (Alene IA ; sans clé, Alene répond avec ses réponses de secours) |
+| `COMPANY_MTN_NUMBER`, `COMPANY_ORANGE_NUMBER` | facultatifs (déjà 671711046 / 696356036) |
+| `SEED_DEMO`, `DEMO_PASSWORD`, `VITE_DEMO_*` | **laisser vides en production** |
+
+## Mise à jour de l'application installée (PWA)
+Chaque déploiement porte un identifiant de build : l'ancien cache est supprimé automatiquement et la page se recharge. Si un téléphone garde l'ancienne version : fermez complètement l'app, rouvrez-la deux fois ; en dernier recours, Chrome → ⓘ → Paramètres du site → Effacer les données.
+
 ## Sauvegardes (important)
 - Le fichier `database.json` contient **toutes** vos données. Chaque semaine, copiez-le (Railway > Volume > téléchargement, ou demandez-moi d'ajouter une sauvegarde automatique par e-mail).
 - Ne perdez jamais `SESSION_SECRET` et `ADMIN_PASSWORD`.

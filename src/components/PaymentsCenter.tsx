@@ -4,12 +4,12 @@ import { apiFetch } from '../lib/api';
 import { readNfcTag, writeNfcTag, nfcSupported } from '../lib/nfc';
 
 type Info = { mtn: string; orange: string; accountName: string };
-type Tab = 'pay' | 'commissions' | 'cards' | 'passwords';
+type Tab = 'pay' | 'tarifs' | 'commissions' | 'cards' | 'passwords';
 
 const money = (n: number) => `${(n || 0).toLocaleString('fr-FR')} FCFA`;
 
 export const PaymentsCenter: React.FC = () => {
-  const { currentUser, orders, cards, users, refreshState } = useApp();
+  const { currentUser, orders, cards, users, refreshState, services, loyaltyPointsRate, loyaltyPointValue, nfcPointsMultiplier } = useApp();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('pay');
   const [info, setInfo] = useState<Info | null>(null);
@@ -18,6 +18,11 @@ export const PaymentsCenter: React.FC = () => {
   const [form, setForm] = useState<Record<string, { operator: string; reference: string; phone: string }>>({});
   const [resets, setResets] = useState<any[]>([]);
   const [codes, setCodes] = useState<Record<string, string>>({});
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [setRate, setSetRate] = useState<string>('');
+  const [setPv, setSetPv] = useState<string>('');
+  const [setMult, setSetMult] = useState<string>('');
+  const [newSvc, setNewSvc] = useState({ title: '', price: '5000' });
 
   const role = currentUser?.role;
   const staff = role === 'admin' || role === 'supervisor';
@@ -165,6 +170,58 @@ export const PaymentsCenter: React.FC = () => {
     </div>
   );
 
+  const rateV = Number(setRate !== '' ? setRate : loyaltyPointsRate);
+  const pvV = Number(setPv !== '' ? setPv : loyaltyPointValue) || 1;
+  const multV = Number(setMult !== '' ? setMult : nfcPointsMultiplier) || 1;
+  const exPts = Math.round((5000 * rateV) / 100 / pvV);
+  const exPtsNfc = Math.round((5000 * rateV * multV) / 100 / pvV);
+  const rewardPctNfc = rateV * multV;
+
+  const renderTarifs = () => (
+    <div className="space-y-4">
+      <div className={card}>
+        <p className="font-black text-sm">Points de fidélité</p>
+        <div className="grid grid-cols-3 gap-2">
+          <label className="space-y-1"><span className="text-slate-500">Récompense (% du prix)</span>
+            <input type="number" min={0} max={30} step="0.5" value={setRate !== '' ? setRate : String(loyaltyPointsRate)} onChange={e => setSetRate(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 dark:bg-[#0c1221]" /></label>
+          <label className="space-y-1"><span className="text-slate-500">1 point = (FCFA)</span>
+            <input type="number" min={1} value={setPv !== '' ? setPv : String(loyaltyPointValue)} onChange={e => setSetPv(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 dark:bg-[#0c1221]" /></label>
+          <label className="space-y-1"><span className="text-slate-500">Multiplicateur NFC</span>
+            <input type="number" min={1} max={5} step="0.5" value={setMult !== '' ? setMult : String(nfcPointsMultiplier)} onChange={e => setSetMult(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 dark:bg-[#0c1221]" /></label>
+        </div>
+        <p className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-blue-900 font-bold">
+          Exemple : une prestation de 5 000 FCFA rapporte <b>{exPts} points</b> ({exPts * pvV} FCFA de cadeaux), soit <b>{exPtsNfc} points</b> avec la validation NFC ({rewardPctNfc} % du prix).
+        </p>
+        {rewardPctNfc > 15 && <p className="bg-amber-50 border border-amber-300 rounded-lg p-2 text-amber-900 font-bold">⚠️ Avec le NFC, vous rendez {rewardPctNfc} % du prix en cadeaux alors que STUD'S ne garde que 30 %. Vérifiez votre marge.</p>}
+        <button disabled={busy === 'settings'} onClick={() => call('settings', '/api/admin/settings', { loyaltyPointsRate: rateV, loyaltyPointValue: pvV, nfcPointsMultiplier: multV }, 'Réglages enregistrés.')} className={`${btn} w-full bg-blue-600 text-white`}>Enregistrer les réglages</button>
+      </div>
+
+      <p className="font-black uppercase text-[11px] text-slate-400">Tarifs des services</p>
+      {services.map((sv: any) => (
+        <div key={sv.id} className={card}>
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-black">{sv.title}</p>
+            <button onClick={() => call(sv.id, '/api/admin/service-update', { id: sv.id, active: sv.active === false }, sv.active === false ? 'Service réactivé.' : 'Service masqué du catalogue.')} className={`px-2.5 py-1 rounded-full text-[11px] font-black cursor-pointer ${sv.active === false ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 text-emerald-900'}`}>{sv.active === false ? 'Masqué' : 'Actif'}</button>
+          </div>
+          <div className="flex gap-2">
+            <input type="number" min={100} value={prices[sv.id] ?? String(sv.price)} onChange={e => setPrices(p => ({ ...p, [sv.id]: e.target.value }))} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 dark:bg-[#0c1221]" />
+            <span className="self-center text-slate-500">FCFA / {sv.unit}</span>
+            <button disabled={busy === sv.id || String(prices[sv.id] ?? sv.price) === String(sv.price)} onClick={() => call(sv.id, '/api/admin/service-update', { id: sv.id, price: Number(prices[sv.id]) }, 'Tarif modifié.')} className={`${btn} bg-blue-600 text-white`}>OK</button>
+          </div>
+        </div>
+      ))}
+      <div className={card}>
+        <p className="font-black">Ajouter un service</p>
+        <input value={newSvc.title} onChange={e => setNewSvc(v => ({ ...v, title: e.target.value }))} placeholder="Nom du service" className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 dark:bg-[#0c1221]" />
+        <div className="flex gap-2">
+          <input type="number" value={newSvc.price} onChange={e => setNewSvc(v => ({ ...v, price: e.target.value }))} className="flex-1 border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 dark:bg-[#0c1221]" />
+          <button disabled={busy === 'new' || !newSvc.title.trim()} onClick={async () => { const d = await call('new', '/api/admin/service-create', { title: newSvc.title, price: Number(newSvc.price) }, 'Service ajouté.'); if (d?.success) setNewSvc({ title: '', price: '5000' }); }} className={`${btn} bg-emerald-600 text-white`}>Ajouter</button>
+        </div>
+      </div>
+      <p className="text-slate-500">Un changement de tarif s'applique aux nouvelles commandes ; les commandes déjà passées gardent leur prix.</p>
+    </div>
+  );
+
   const renderCommissions = () => (
     <div className="space-y-3">
       {owing.length === 0 && <p className="text-slate-500 text-center py-6">Aucune commission en attente. ✅</p>}
@@ -222,7 +279,7 @@ export const PaymentsCenter: React.FC = () => {
     </div>
   );
 
-  const tabs: [Tab, string][] = staff ? [['pay', `Paiements${declared.length ? ` (${declared.length})` : ''}`], ['commissions', 'Commissions'], ['cards', 'Cartes NFC'], ['passwords', 'Accès']] : [];
+  const tabs: [Tab, string][] = staff ? [['pay', `Paiements${declared.length ? ` (${declared.length})` : ''}`], ['tarifs', 'Tarifs & points'], ['commissions', 'Commissions'], ['cards', 'Cartes NFC'], ['passwords', 'Accès']] : [];
 
   return (
     <>
@@ -238,12 +295,12 @@ export const PaymentsCenter: React.FC = () => {
               <button onClick={() => setOpen(false)} className="text-slate-500 font-black px-2 cursor-pointer">✕</button>
             </div>
             {staff && (
-              <div className="grid grid-cols-4 gap-1">
-                {tabs.map(([k, l]) => <button key={k} onClick={() => { setTab(k); setMsg(null); }} className={`py-1.5 rounded-lg text-[10px] font-black ${tab === k ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-700'}`}>{l}</button>)}
+              <div className="flex flex-wrap gap-1">
+                {tabs.map(([k, l]) => <button key={k} onClick={() => { setTab(k); setMsg(null); }} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-black ${tab === k ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-700'}`}>{l}</button>)}
               </div>
             )}
             {msg && <p className={`rounded-xl p-2.5 text-xs font-bold ${msg.ok ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'bg-rose-50 text-rose-900 border border-rose-200'}`}>{msg.text}</p>}
-            {staff ? (tab === 'pay' ? renderStaffPay() : tab === 'commissions' ? renderCommissions() : tab === 'cards' ? renderCards() : renderPasswords())
+            {staff ? (tab === 'pay' ? renderStaffPay() : tab === 'tarifs' ? renderTarifs() : tab === 'commissions' ? renderCommissions() : tab === 'cards' ? renderCards() : renderPasswords())
               : role === 'provider' ? renderProvider() : renderClient()}
           </div>
         </div>

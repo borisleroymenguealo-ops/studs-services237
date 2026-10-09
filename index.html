@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STUD'S App - Services Étudiants à Ebolowa</title>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0b4a94" />
+    <meta name="application-name" content="STUD'S App" />
+    <meta name="apple-mobile-web-app-title" content="STUD'S App" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script>
+      // Capture PWA installation prompt for instant 1-click install on Android
+      window.deferredPwaPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPwaPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwaPromptReady'));
+      });
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => {
+              console.log('Service Worker enregistré avec succès :', reg.scope);
+              
+              // Force background update check on app launch
+              reg.update().catch(() => {});
+
+              // Check for updates periodically (every 5 minutes)
+              setInterval(() => {
+                reg.update().catch(() => {});
+              }, 300000);
+            })
+            .catch((err) => console.error('Erreur d\'enregistrement du Service Worker :', err));
+
+          // Reload the page automatically to load new assets when the service worker replaces the old one
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            console.log('Nouvelle mise à jour de l\'application détectée ! Rechargement en cours...');
+            window.location.reload();
+          });
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
